@@ -7,6 +7,7 @@ function App() {
   const [posts, setPosts] = useState([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [currentView, setCurrentView] = useState('home')
 
   // Check auth status on load
   useEffect(() => {
@@ -90,11 +91,11 @@ function App() {
           <span className="logo-text">MiniGram</span>
         </div>
         <div className="nav-links">
-          <div className="nav-item active">
+          <div className={`nav-item ${currentView === 'home' ? 'active' : ''}`} onClick={() => setCurrentView('home')}>
             <Home size={24} />
             <span className="nav-text">Home</span>
           </div>
-          <div className="nav-item">
+          <div className={`nav-item ${currentView === 'search' ? 'active' : ''}`} onClick={() => setCurrentView('search')}>
             <Search size={24} />
             <span className="nav-text">Search</span>
           </div>
@@ -102,11 +103,15 @@ function App() {
             <PlusSquare size={24} />
             <span className="nav-text">Create</span>
           </div>
-          <div className="nav-item title-only-mobile" onClick={() => supabase.auth.signOut()}>
+          <div className="nav-item title-only-mobile" onClick={() => {
+            if (window.confirm('정말 로그아웃하시겠습니까?')) {
+              supabase.auth.signOut()
+            }
+          }}>
              <LogOut size={24} />
              <span className="nav-text">Logout</span>
           </div>
-          <div className="nav-item">
+          <div className={`nav-item ${currentView === 'profile' ? 'active' : ''}`} onClick={() => setCurrentView('profile')}>
             <div className="avatar" style={{width: 24, height: 24, padding: 0}}>
                <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${session.user.id}`} alt="my profile" />
             </div>
@@ -115,23 +120,27 @@ function App() {
         </div>
       </nav>
 
-      {/* Main Feed Content */}
+      {/* Main Content Areas */}
       <main className="main-content">
-        <div className="feed-container">
-          {posts.map(post => (
-            <Post 
-              key={post.id} 
-              post={post} 
-              currentUser={session.user} 
-              onInteract={() => fetchPosts(session.user.id)} 
-            />
-          ))}
-          {posts.length === 0 && (
-            <div style={{ textAlign: 'center', marginTop: '50px', color: 'var(--text-secondary)' }}>
-              No posts yet. Be the first to post!
-            </div>
-          )}
-        </div>
+        {currentView === 'home' && (
+          <div className="feed-container">
+            {posts.map(post => (
+              <Post 
+                key={post.id} 
+                post={post} 
+                currentUser={session.user} 
+                onInteract={() => fetchPosts(session.user.id)} 
+              />
+            ))}
+            {posts.length === 0 && (
+              <div style={{ textAlign: 'center', marginTop: '50px', color: 'var(--text-secondary)' }}>
+                아직 게시물이 없습니다. 첫 게시물을 공유해 보세요!
+              </div>
+            )}
+          </div>
+        )}
+        {currentView === 'search' && <SearchScreen allPosts={posts} />}
+        {currentView === 'profile' && <ProfileScreen user={session.user} allPosts={posts} />}
       </main>
 
       {/* Create Post Modal */}
@@ -524,6 +533,108 @@ function CreatePostModal({ user, onClose, onPostCreated }) {
             {loading ? '업로드 중...' : '공유하기'}
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ============== Search Screen ==============
+function SearchScreen({ allPosts }) {
+  const [query, setQuery] = useState('')
+  const filteredPosts = allPosts.filter(p => 
+    (p.caption && p.caption.toLowerCase().includes(query.toLowerCase())) ||
+    (p.user_id && p.user_id.toLowerCase().includes(query.toLowerCase()))
+  )
+
+  return (
+    <div style={{ width: '100%', maxWidth: '470px', padding: '20px 0' }}>
+      <h2 style={{ marginBottom: '20px' }}>검색</h2>
+      <input 
+        type="text" 
+        placeholder="내용 또는 작성자 ID로 검색..." 
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '20px', outline: 'none' }}
+      />
+      {query && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {filteredPosts.length > 0 ? (
+            filteredPosts.map(post => {
+              const authorName = post.user_id ? `user_${post.user_id.substring(0,6)}` : `user_${post.id?.toString().substring(0,4)}`
+              return (
+                <div key={post.id} style={{ display: 'flex', gap: '15px', alignItems: 'center', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                  <img src={post.image_url} alt="post" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '14px' }}>{authorName}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      {post.caption?.substring(0, 40)}{post.caption?.length > 40 ? '...' : ''}
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          ) : (
+            <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>검색 결과가 없습니다.</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============== Profile Screen ==============
+function ProfileScreen({ user, allPosts }) {
+  const myPosts = allPosts.filter(p => p.user_id === user.id)
+  const username = user.email ? user.email.split('@')[0] : `user_${user.id.substring(0,6)}`
+
+  return (
+    <div style={{ width: '100%', maxWidth: '935px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 20px' }}>
+      {/* Profile Header */}
+      <div style={{ display: 'flex', gap: '40px', marginBottom: '40px', width: '100%', maxWidth: '700px', alignItems: 'center' }}>
+        <div style={{ width: '150px', height: '150px', borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--border-color)', flexShrink: 0 }}>
+          <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${user.id}`} alt="avatar" style={{width: '100%', height: '100%', backgroundColor: '#efefef'}} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', flex: 1 }}>
+          <div style={{ fontSize: '24px', fontWeight: 400 }}>{username}</div>
+          <div style={{ display: 'flex', gap: '30px', fontSize: '16px' }}>
+            <span>게시물 <strong>{myPosts.length}</strong></span>
+            <span>팔로워 <strong>0</strong></span>
+            <span>팔로우 <strong>0</strong></span>
+          </div>
+          <div style={{ fontSize: '14px', lineHeight: '1.5' }}>
+            <strong>{username}</strong><br />
+            환영합니다! 이 곳은 나의 프로필 페이지입니다. 📸<br />
+            <span style={{color: 'var(--text-secondary)'}}>user_{user.id.substring(0,6)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Profile Grid */}
+      <div style={{ borderTop: '1px solid var(--border-color)', width: '100%', paddingTop: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+          {myPosts.map(post => (
+            <div key={post.id} style={{ aspectRatio: '1/1', position: 'relative', cursor: 'pointer' }}>
+              <img src={post.image_url} alt="post" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div 
+                style={{ 
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                  backgroundColor: 'rgba(0,0,0,0.3)', opacity: 0, 
+                  display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', color: 'white', fontWeight: 'bold' 
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                onMouseLeave={e => e.currentTarget.style.opacity = 0}
+              >
+                <span>❤️ {post.likesCount || 0}</span>
+                <span>💬 {post.comments?.length || 0}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        {myPosts.length === 0 && (
+          <div style={{ textAlign: 'center', marginTop: '50px', color: 'var(--text-secondary)' }}>
+            아직 공유한 게시물이 없습니다.
+          </div>
+        )}
       </div>
     </div>
   )
