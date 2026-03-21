@@ -103,9 +103,11 @@ function App() {
             <PlusSquare size={24} />
             <span className="nav-text">Create</span>
           </div>
-          <div className="nav-item title-only-mobile" onClick={() => {
+          <div className="nav-item title-only-mobile" onClick={async () => {
             if (window.confirm('정말 로그아웃하시겠습니까?')) {
-              supabase.auth.signOut()
+              await supabase.auth.signOut()
+              setSession(null)
+              setCurrentView('home')
             }
           }}>
              <LogOut size={24} />
@@ -556,11 +558,15 @@ function SearchScreen({ allPosts }) {
         onChange={e => setQuery(e.target.value)}
         style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '20px', outline: 'none' }}
       />
-      {query && (
+      {query.trim() === '' ? (
+        <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px 0' }}>
+          🔍 검색어를 입력해보세요! (내용 또는 유저ID)
+        </div>
+      ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {filteredPosts.length > 0 ? (
             filteredPosts.map(post => {
-              const authorName = post.user_id ? `user_${post.user_id.substring(0,6)}` : `user_${post.id?.toString().substring(0,4)}`
+              const authorName = post.user_id ? `user_${String(post.user_id).substring(0,6)}` : `user_${String(post.id).substring(0,4)}`
               return (
                 <div key={post.id} style={{ display: 'flex', gap: '15px', alignItems: 'center', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                   <img src={post.image_url} alt="post" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
@@ -584,8 +590,8 @@ function SearchScreen({ allPosts }) {
 
 // ============== Profile Screen ==============
 function ProfileScreen({ user, allPosts }) {
-  const myPosts = allPosts.filter(p => p.user_id === user.id)
-  const username = user.email ? user.email.split('@')[0] : `user_${user.id.substring(0,6)}`
+  const myPosts = allPosts.filter(p => String(p.user_id) === String(user.id))
+  const username = user.email ? user.email.split('@')[0] : `user_${String(user.id).substring(0,6)}`
 
   return (
     <div style={{ width: '100%', maxWidth: '935px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 20px' }}>
@@ -604,7 +610,7 @@ function ProfileScreen({ user, allPosts }) {
           <div style={{ fontSize: '14px', lineHeight: '1.5' }}>
             <strong>{username}</strong><br />
             환영합니다! 이 곳은 나의 프로필 페이지입니다. 📸<br />
-            <span style={{color: 'var(--text-secondary)'}}>user_{user.id.substring(0,6)}</span>
+            <span style={{color: 'var(--text-secondary)'}}>user_{String(user.id).substring(0,6)}</span>
           </div>
         </div>
       </div>
