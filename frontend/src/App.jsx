@@ -72,7 +72,7 @@ function App() {
   }
 
   if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading MiniGram...</div>
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading Minigram...</div>
   }
 
   // Show Login Screen if not authenticated
@@ -87,21 +87,21 @@ function App() {
     <div className="app-container">
       {/* Sidebar Navigation */}
       <nav className="sidebar">
-        <div className="logo">
-          <span className="logo-text">MiniGram</span>
+        <div className="logo notranslate" translate="no">
+          <span className="logo-text">Minigram</span>
         </div>
         <div className="nav-links">
           <div className={`nav-item ${currentView === 'home' ? 'active' : ''}`} onClick={() => setCurrentView('home')}>
             <Home size={24} />
-            <span className="nav-text">Home</span>
+            <span translate="no" className="nav-text notranslate">홈</span>
           </div>
           <div className={`nav-item ${currentView === 'search' ? 'active' : ''}`} onClick={() => setCurrentView('search')}>
             <Search size={24} />
-            <span className="nav-text">Search</span>
+            <span translate="no" className="nav-text notranslate">검색</span>
           </div>
           <div className="nav-item" onClick={() => setIsModalOpen(true)}>
             <PlusSquare size={24} />
-            <span className="nav-text">Create</span>
+            <span translate="no" className="nav-text notranslate">만들기</span>
           </div>
           <div className="nav-item title-only-mobile" onClick={async () => {
             if (window.confirm('정말 로그아웃하시겠습니까?')) {
@@ -111,13 +111,13 @@ function App() {
             }
           }}>
              <LogOut size={24} />
-             <span className="nav-text">Logout</span>
+             <span translate="no" className="nav-text notranslate">로그아웃</span>
           </div>
           <div className={`nav-item ${currentView === 'profile' ? 'active' : ''}`} onClick={() => setCurrentView('profile')}>
             <div className="avatar" style={{width: 24, height: 24, padding: 0}}>
                <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${session.user.id}`} alt="my profile" />
             </div>
-            <span className="nav-text" style={{fontWeight: 600}}>Profile</span>
+            <span translate="no" className="nav-text notranslate" style={{fontWeight: 600}}>프로필</span>
           </div>
         </div>
       </nav>
@@ -166,10 +166,11 @@ function AuthScreen({ onAdminBypass }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLogin, setIsLogin] = useState(true)
+  const [statusMsg, setStatusMsg] = useState({ text: '', isError: false })
 
   // Easter Egg State
   const [clickSequence, setClickSequence] = useState([])
-  const targetSequence = ['미', '그', '니', '램']
+  const targetSequence = ['M', 'g', 'n', 'r'] 
 
   const handleCharClick = (char) => {
     const newSequence = [...clickSequence, char]
@@ -205,6 +206,7 @@ function AuthScreen({ onAdminBypass }) {
   const handleAuth = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setStatusMsg({ text: '', isError: false })
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -212,10 +214,11 @@ function AuthScreen({ onAdminBypass }) {
       } else {
         const { error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
-        alert('Signup successful! You can now log in.')
+        setStatusMsg({ text: '가입에 성공했습니다! 이제 로그인할 수 있습니다.', isError: false })
+        setIsLogin(true) // optionally switch to login view
       }
     } catch (error) {
-      // Translate common error messages to Korean
+      // Translate common error messages
       let kMsg = error.message
       if (kMsg.includes('Invalid login credentials')) {
         kMsg = '가입되지 않은 이메일이거나 비밀번호가 틀렸습니다.'
@@ -228,25 +231,37 @@ function AuthScreen({ onAdminBypass }) {
       } else if (kMsg.toLowerCase().includes('rate limit')) {
          kMsg = '과도한 요청이 발생했습니다. 잠시 후(약 1시간 뒤) 다시 시도해주세요.'
       }
-      alert(kMsg)
+      setStatusMsg({ text: kMsg, isError: true })
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#fafafa' }}>
+    <div translate="no" className="notranslate" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#fafafa' }}>
       <div style={{ backgroundColor: 'white', padding: '40px', border: '1px solid #dbdbdb', borderRadius: '10px', width: '350px', textAlign: 'center' }}>
-        <h1 style={{ fontFamily: 'Inter', fontSize: '32px', marginBottom: '30px', userSelect: 'none' }}>
-          <span onClick={() => handleCharClick('미')} style={{ cursor: 'pointer' }}>미</span>
-          <span onClick={() => handleCharClick('니')} style={{ cursor: 'pointer' }}>니</span>
-          <span onClick={() => handleCharClick('그')} style={{ cursor: 'pointer' }}>그</span>
-          <span onClick={() => handleCharClick('램')} style={{ cursor: 'pointer' }}>램</span>
+        <h1 style={{ fontFamily: 'Inter', fontSize: '32px', marginBottom: '30px', userSelect: 'none', position: 'relative', display: 'inline-block' }}>
+          <span translate="no" className="notranslate">Minigram</span>
+          {/* Invisible overlay for Easter Egg clicks so the text translates as one word */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', opacity: 0 }}>
+            <span onClick={() => handleCharClick('M')} style={{ width: '16%', cursor: 'pointer' }}></span>
+            <span style={{ width: '8%' }}></span>
+            <span onClick={() => handleCharClick('n')} style={{ width: '12%', cursor: 'pointer' }}></span>
+            <span style={{ width: '8%' }}></span>
+            <span onClick={() => handleCharClick('g')} style={{ width: '14%', cursor: 'pointer' }}></span>
+            <span onClick={() => handleCharClick('r')} style={{ width: '10%', cursor: 'pointer' }}></span>
+            <span style={{ width: '32%' }}></span>
+          </div>
         </h1>
         <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          {statusMsg.text && (
+            <div style={{ color: statusMsg.isError ? '#ed4956' : '#28a745', fontSize: '14px', marginBottom: '5px', fontWeight: '500' }}>
+              {statusMsg.text}
+            </div>
+          )}
           <input
             type="email"
-            placeholder="Email address"
+            placeholder="이메일 주소"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={{ padding: '10px', borderRadius: '5px', border: '1px solid #dbdbdb', backgroundColor: '#fafafa' }}
@@ -265,17 +280,17 @@ function AuthScreen({ onAdminBypass }) {
             disabled={loading}
             style={{ backgroundColor: '#0095f6', color: 'white', padding: '10px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}
           >
-            {loading ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up')}
+            {loading ? '처리중...' : (isLogin ? '로그인' : '가입하기')}
           </button>
         </form>
         
         <div style={{ marginTop: '20px', fontSize: '14px' }}>
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
+          {isLogin ? "계정이 없으신가요? " : "이미 계정이 있으신가요? "}
           <span 
             onClick={() => setIsLogin(!isLogin)} 
             style={{ color: '#0095f6', fontWeight: 'bold', cursor: 'pointer' }}
           >
-            {isLogin ? 'Sign up' : 'Log in'}
+            {isLogin ? '가입하기' : '로그인'}
           </span>
         </div>
       </div>
@@ -339,7 +354,7 @@ function Post({ post, currentUser, onInteract }) {
         <div className="avatar">
           <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${post.user_id || post.id}`} alt="avatar" />
         </div>
-        <span className="username">{authorName}</span>
+        <span className="username notranslate" translate="no">{authorName}</span>
         <MoreHorizontal size={20} style={{ marginLeft: 'auto', cursor: 'pointer' }} />
       </div>
 
@@ -362,8 +377,8 @@ function Post({ post, currentUser, onInteract }) {
         {post.likesCount} {post.likesCount === 1 ? 'like' : 'likes'}
       </div>
 
-      <div className="post-caption">
-        <span className="username">{authorName}</span>
+      <div className="post-caption notranslate" translate="no">
+        <span className="username notranslate" translate="no">{authorName}</span>
         {post.caption}
       </div>
 
@@ -372,7 +387,7 @@ function Post({ post, currentUser, onInteract }) {
         <div className="post-comments" style={{ padding: '0 14px 10px', fontSize: '14px' }}>
           {post.comments.map(c => (
             <div key={c.id} style={{ marginBottom: '4px' }}>
-              <span className="username" style={{ marginRight: '6px' }}>user_{c.user_id.substring(0,6)}</span>
+              <span className="username notranslate" translate="no" style={{ marginRight: '6px' }}>user_{c.user_id.substring(0,6)}</span>
               <span>{c.content}</span>
             </div>
           ))}
@@ -571,8 +586,8 @@ function SearchScreen({ allPosts }) {
                 <div key={post.id} style={{ display: 'flex', gap: '15px', alignItems: 'center', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                   <img src={post.image_url} alt="post" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '14px' }}>{authorName}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    <div className="notranslate" translate="no" style={{ fontWeight: 600, fontSize: '14px' }}>{authorName}</div>
+                    <div translate="no" className="notranslate" style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                       {post.caption?.substring(0, 40)}{post.caption?.length > 40 ? '...' : ''}
                     </div>
                   </div>
@@ -590,8 +605,39 @@ function SearchScreen({ allPosts }) {
 
 // ============== Profile Screen ==============
 function ProfileScreen({ user, allPosts }) {
+  const [isSettingsMode, setIsSettingsMode] = useState(false)
+  const [bio, setBio] = useState(user.user_metadata?.bio || '환영합니다! 이 곳은 나의 프로필 페이지입니다. 📸')
+  const [tempBio, setTempBio] = useState(bio)
+  const [isSaving, setIsSaving] = useState(false)
+
   const myPosts = allPosts.filter(p => String(p.user_id) === String(user.id))
   const username = user.email ? user.email.split('@')[0] : `user_${String(user.id).substring(0,6)}`
+  const isAdmin = user.id === '99999999-9999-4999-b999-999999999999'
+
+  const handleSettingsClick = () => {
+    if (isAdmin) {
+      setIsSettingsMode(true)
+    } else {
+      alert("이메일과 비밀번호를 입력하세요")
+      setIsSettingsMode(true) // Per user's request flow: alert then enter settings
+    }
+  }
+
+  const handleSaveBio = async () => {
+    setIsSaving(true)
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { bio: tempBio }
+      })
+      if (error) throw error
+      setBio(tempBio)
+      setIsSettingsMode(false)
+    } catch (error) {
+      alert('설정 저장 중 에러가 발생했습니다: ' + error.message)
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   return (
     <div style={{ width: '100%', maxWidth: '935px', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '30px 20px' }}>
@@ -601,17 +647,52 @@ function ProfileScreen({ user, allPosts }) {
           <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${user.id}`} alt="avatar" style={{width: '100%', height: '100%', backgroundColor: '#efefef'}} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', flex: 1 }}>
-          <div style={{ fontSize: '24px', fontWeight: 400 }}>{username}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div className="notranslate" translate="no" style={{ fontSize: '24px', fontWeight: 400 }}>{username}</div>
+            <button 
+              onClick={handleSettingsClick}
+              style={{ padding: '6px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: '#efefef', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}
+            >
+              프로필 설정
+            </button>
+          </div>
           <div style={{ display: 'flex', gap: '30px', fontSize: '16px' }}>
             <span>게시물 <strong>{myPosts.length}</strong></span>
             <span>팔로워 <strong>0</strong></span>
             <span>팔로우 <strong>0</strong></span>
           </div>
-          <div style={{ fontSize: '14px', lineHeight: '1.5' }}>
-            <strong>{username}</strong><br />
-            환영합니다! 이 곳은 나의 프로필 페이지입니다. 📸<br />
-            <span style={{color: 'var(--text-secondary)'}}>user_{String(user.id).substring(0,6)}</span>
-          </div>
+          
+          {!isSettingsMode ? (
+            <div style={{ fontSize: '14px', lineHeight: '1.5' }}>
+              <strong className="notranslate" translate="no">{username}</strong><br />
+              {bio}<br />
+              <span className="notranslate" translate="no" style={{color: 'var(--text-secondary)'}}>user_{String(user.id).substring(0,6)}</span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+              <textarea 
+                value={tempBio}
+                onChange={(e) => setTempBio(e.target.value)}
+                placeholder="자신의 소개를 입력하세요..."
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', resize: 'none', height: '80px', outline: 'none' }}
+              />
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  onClick={handleSaveBio}
+                  disabled={isSaving}
+                  style={{ backgroundColor: '#0095f6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  {isSaving ? '저장 중...' : '저장'}
+                </button>
+                <button 
+                  onClick={() => setIsSettingsMode(false)}
+                  style={{ backgroundColor: '#efefef', border: '1px solid #dbdbdb', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
